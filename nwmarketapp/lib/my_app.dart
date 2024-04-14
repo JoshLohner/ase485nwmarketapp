@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'search_page.dart'; // Import the SearchPage
+import 'api_service.dart'; // Importing the fetchlatestPrices and fetchNames functions
+import 'search_page.dart'; // Importing the SearchPage
+import 'other_page.dart'; // Importing the OtherPage
+import 'database_helper.dart'; // Importing the DatabaseHelper
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -17,89 +16,55 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(),
+      home: MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<dynamic> data = [];
-  int _currentIndex = 0;
-  late PageController _pageController;
+  String _serverData = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-    fetchData();
-  }
+  bool _isLoading = false;
+  int _selectedIndex = 0;
 
-  Future<void> fetchData() async {
-    final response =
-        await http.get(Uri.parse('https://jsonplaceholder.typicode.com/posts'));
+  final List<Widget> _widgetOptions = <Widget>[
+    MyHomePage(),
+    SearchPage(),
+    OtherPage(),
+  ];
 
-    if (response.statusCode == 200) {
-      setState(() {
-        data = json.decode(response.body);
-      });
-    } else {
-      throw Exception('Failed to load data');
-    }
-  }
+  DatabaseHelper dbHelper = DatabaseHelper();
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('API Demo'),
+        title: Text('Flutter API Demo'),
       ),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        children: [
-          Center(
-            child: data.isEmpty
-                ? const CircularProgressIndicator()
-                : ListView.builder(
-                    itemCount: data.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        title: Text(data[index]['title']),
-                        subtitle: Text(data[index]['body']),
-                      );
-                    },
-                  ),
-          ),
-          SearchPage(), // Use the SearchPage here
-        ],
-      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  _serverData,
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          _pageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        },
-        items: [
+        items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',
@@ -108,8 +73,76 @@ class _MyHomePageState extends State<MyHomePage> {
             icon: Icon(Icons.search),
             label: 'Search',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Other',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: () {
+              _loadServers();
+            },
+            tooltip: 'Load Servers',
+            child: Icon(Icons.refresh),
+          ),
+          SizedBox(height: 16), // Adding some spacing between the buttons
+          FloatingActionButton(
+            onPressed: () {
+              _createNameDict();
+            },
+            tooltip: 'Name Dict',
+            child: Icon(Icons.add), // You can change the icon as needed
+          ),
+          SizedBox(height: 16),
         ],
       ),
     );
+  }
+
+  Future<void> _loadServers() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final serverData = await fetchServers();
+
+      setState(() {
+        _serverData = serverData;
+        //print(_serverData);
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error: $e');
+    }
+  }
+
+  Future<void> _createNameDict() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      Map<String, dynamic> names = await fetchNames();
+
+      setState(() {
+        print(names);
+        print(names['Iron Ore']);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error: $e');
+    }
   }
 }
