@@ -39,8 +39,21 @@ Future<Map<String, dynamic>> fetchNames() async {
   }
 }
 
-Future<String> fetchSingleItemPrice(int item_id) async {
+Future<double> fetchSingleItemPrice(int item_id) async {
   final response = await http
       .get(Uri.parse('https://nwmarketprices.com/0/15?cn_id=$item_id'));
-  return response.body;
+  Map<String, dynamic> responseData = jsonDecode(response.body);
+  double recentLowestPrice = responseData['recent_lowest_price'];
+
+  return recentLowestPrice;
+}
+
+Future<double> fetchPriceData(int item_id) async {
+  final response = await http
+      .get(Uri.parse('https://nwmarketprices.com/0/15?cn_id=$item_id'));
+  Map<String, dynamic> responseData = jsonDecode(response.body);
+  print(responseData);
+  double recentLowestPrice = responseData['recent_lowest_price'];
+
+  return recentLowestPrice;
 }

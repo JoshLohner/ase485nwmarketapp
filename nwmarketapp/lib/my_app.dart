@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'api_service.dart'; // Importing the fetchlatestPrices and fetchNames functions
 import 'search_page.dart'; // Importing the SearchPage
-import 'other_page.dart'; // Importing the OtherPage
-import 'database_helper.dart'; // Importing the DatabaseHelper
+import 'other_page.dart';
 
-void main() {
+void main() async {
+  Hive.initFlutter();
   runApp(MyApp());
 }
 
@@ -27,23 +28,27 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late Box _favBox;
+  Map<String, dynamic>? namesDict;
   String _serverData = '';
-
   bool _isLoading = false;
   int _selectedIndex = 0;
 
-  final List<Widget> _widgetOptions = <Widget>[
-    MyHomePage(),
-    SearchPage(),
-    OtherPage(),
-  ];
+  List<String> _names = [];
+  List<double> _prices = [];
 
-  DatabaseHelper dbHelper = DatabaseHelper();
+  @override
+  void initState() {
+    super.initState();
+    _createNameDict();
+    _initializeHiveBox();
+  }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  Future<void> _initializeHiveBox() async {
+    _favBox = await Hive.openBox('favBox');
+    await _createNameDict(); // Wait for fetchNames() to complete
+    extractValues(_favBox);
+    setPrices(_favBox);
   }
 
   @override
@@ -54,14 +59,78 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Text(
-                  _serverData,
-                  style: TextStyle(fontSize: 16),
-                ),
+          : GridView.builder(
+              padding: const EdgeInsets.all(20.0),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 10.0,
+                mainAxisSpacing: 10.0,
               ),
+              itemCount: _names.length,
+              itemBuilder: (BuildContext context, int index) {
+                // Check if the index is valid before accessing elements
+                if (index >= 0 && index < _names.length) {
+                  return GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.blue),
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      padding: const EdgeInsets.all(10.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _names[index],
+                                  style: TextStyle(
+                                    fontSize: 18.0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 10.0),
+                                Text(
+                                  _prices.isNotEmpty
+                                      ? '\$${_prices[index]}'
+                                      : '',
+                                  style: TextStyle(
+                                    fontSize: 16.0,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.remove),
+                                onPressed: () {
+                                  _removeFromFavorites(index);
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.insert_chart),
+                                onPressed: () {
+                                  // Add your logic here for the graph button
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else {
+                  // Return an empty container or placeholder widget if index is out of range
+                  return Container();
+                }
+              },
             ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
@@ -85,24 +154,58 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
-            onPressed: () {
-              _loadServers();
+            onPressed: () async {
+              displayAllItems(_favBox);
+              print("before");
+              setPrices(_favBox);
+              print("after");
             },
             tooltip: 'Load Servers',
             child: Icon(Icons.refresh),
           ),
           SizedBox(height: 16), // Adding some spacing between the buttons
-          FloatingActionButton(
-            onPressed: () {
-              _createNameDict();
-            },
-            tooltip: 'Name Dict',
-            child: Icon(Icons.add), // You can change the icon as needed
-          ),
-          SizedBox(height: 16),
         ],
       ),
     );
+  }
+
+  void setPrices(Box box) async {
+    List<double> prices = [];
+    for (var key in box.keys) {
+      var value = box.get(key);
+      double result = await fetchSingleItemPrice(namesDict?[value]);
+
+      prices.add(result);
+      // Assuming result is a string representation of a double
+    }
+
+    setState(() {
+      _prices = prices;
+      print(_prices);
+    });
+  }
+
+  void extractValues(Box box) {
+    setState(() {
+      _names.clear(); // Clear the existing list before populating it again
+      for (var value in box.values) {
+        _names.add(value
+            .toString()); // Convert the value to a string and add it to the list
+      }
+    });
+  }
+
+  void displayAllItems(Box box) {
+    for (var key in box.keys) {
+      var value = box.get(key);
+      print('Key: $key, Value: $value');
+    }
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   Future<void> _loadServers() async {
@@ -114,8 +217,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
       setState(() {
         _serverData = serverData;
-        //print(_serverData);
-
         _isLoading = false;
       });
     } catch (e) {
@@ -131,11 +232,10 @@ class _MyHomePageState extends State<MyHomePage> {
       _isLoading = true;
     });
     try {
-      Map<String, dynamic> names = await fetchNames();
+      namesDict = await fetchNames(); // Assign fetchNames result to namesDict
 
       setState(() {
-        print(names);
-        print(names['Iron Ore']);
+        // Update state or perform other operations as needed
         _isLoading = false;
       });
     } catch (e) {
@@ -143,6 +243,17 @@ class _MyHomePageState extends State<MyHomePage> {
         _isLoading = false;
       });
       print('Error: $e');
+    }
+  }
+
+  void _removeFromFavorites(int index) {
+    if (index >= 0 && index < _names.length) {
+      String nameToRemove = _names[index];
+      _favBox.delete(nameToRemove); // Remove item from favBox
+      setState(() {
+        _names.removeAt(index); // Remove item from _names list
+        _prices.removeAt(index); // Remove corresponding price
+      });
     }
   }
 }
