@@ -1,6 +1,20 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+Future<Map<String, dynamic>> httpGetJson(String url) async {
+  try {
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception(
+          'Failed to fetch data with status code: ${response.statusCode}');
+    }
+  } on Exception catch (e) {
+    throw Exception('Failed to load data: $e');
+  }
+}
+
 Future<String> fetchServers() async {
   //15 is valhalla
   final response =
@@ -8,52 +22,33 @@ Future<String> fetchServers() async {
   return response.body;
 }
 
-Future<String> fetchlatestPrices() async {
-  final response = await http
-      .get(Uri.parse('https://nwmarketprices.com/api/latest-prices/15/'));
-  return response.body;
-}
-
-Future<Map<String, dynamic>> fetchNames() async {
-  final response = await http
-      .get(Uri.parse('https://nwmarketprices.com/api/confirmed_names/'));
-
-  if (response.statusCode == 200) {
-    Map<String, dynamic> data = json.decode(response.body);
-    Map<String, dynamic> namesDict = {};
-
-    // Iterate through each entry and extract name and name_id
-    data.forEach((key, value) {
-      String name = value['name'];
-      dynamic nameId = value['name_id'];
-
-      // Check if name_id is not null before adding to dictionary
-      if (nameId != null) {
-        namesDict[name] = nameId; // Add entry to dictionary
-      }
-    });
-
-    return namesDict;
-  } else {
-    throw Exception('Failed to load names');
+Future<String> fetchLatestPrices() async {
+  try {
+    final responseData =
+        await httpGetJson('https://nwmarketprices.com/api/latest-prices/15/');
+    return json.encode(
+        responseData); // Assuming you want to convert the response to a JSON string
+  } catch (e) {
+    throw Exception('Failed to fetch latest prices: $e');
   }
 }
 
-Future<double> fetchSingleItemPrice(int item_id) async {
-  final response = await http
-      .get(Uri.parse('https://nwmarketprices.com/0/15?cn_id=$item_id'));
-  Map<String, dynamic> responseData = jsonDecode(response.body);
-  double recentLowestPrice = responseData['recent_lowest_price'];
+Future<Map<String, dynamic>> fetchNames() async {
+  final data =
+      await httpGetJson('https://nwmarketprices.com/api/confirmed_names/');
+  Map<String, dynamic> namesDict = {};
 
-  return recentLowestPrice;
+  data.forEach((key, value) {
+    if (value['name_id'] != null) {
+      namesDict[value['name']] = value['name_id'];
+    }
+  });
+
+  return namesDict;
 }
 
 Future<double> fetchPriceData(int item_id) async {
-  final response = await http
-      .get(Uri.parse('https://nwmarketprices.com/0/15?cn_id=$item_id'));
-  Map<String, dynamic> responseData = jsonDecode(response.body);
-  print(responseData);
-  double recentLowestPrice = responseData['recent_lowest_price'];
-
-  return recentLowestPrice;
+  final responseData =
+      await httpGetJson('https://nwmarketprices.com/0/15?cn_id=$item_id');
+  return responseData['recent_lowest_price'];
 }
