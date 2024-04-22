@@ -1,0 +1,78 @@
+Week 1
+Summary
+Created project structure
+
+Milestones or risks in this week
+No Milestones or risks
+
+Week 2
+Summary
+Not much progress made, getting a basic outline for the code
+
+Milestones or risks in this week
+No Milestones or risks
+
+LOC:0
+
+Burndown:?
+
+Week 2
+Summary
+Not much progress made, getting a basic outline for the code
+
+Milestones or risks in this week
+No Milestones or risks
+
+LOC:64
+
+Burndown:5%
+
+Week 3
+Summary
+Added Navbar
+
+Begin on search page
+
+Milestones or risks in this week
+Midterms
+
+LOC:119
+
+Burndown:10%
+
+Week 4
+3/26:4/1
+
+Summary:
+Prototype overhaul
+
+Milestones or risks in this week
+Easter
+Homework
+LOC:230
+
+Burndown:90%
+
+Week - Final
+4/2 - 4/21
+
+Summary:
+Refactor for final version, cleaned up UI, completed dynamic search functionality, created graphs
+
+Milestones or risks in this week
+Volleyball Nationals
+LOC: 360
+
+Burndown:100%
+
+Design
+https://github.com/lohnerj/ase485nwmarketapp/tree/main/designLinks to an external site.
+
+Code
+https://github.com/lohnerj/ase485nwmarketapp/tree/main/code_progressLinks to an external site.
+
+Tests
+https://github.com/lohnerj/ase485nwmarketapp/tree/main/testsLinks to an external site.
+
+Document
+https://github.com/lohnerj/ase485nwmarketapp/tree/main/documentationLinks to an external site.

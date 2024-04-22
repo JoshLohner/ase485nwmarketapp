@@ -1,0 +1,35 @@
++-----------------------------------------------------------+
+|                          MyApp                            |
++-----------------------------------------------------------+
+| - build(context: BuildContext): Widget                    |
++-----------------------------------------------------------+
+                   |
+                   V
++-----------------------------------------------------------+
+|                        SearchPage                         |
++-----------------------------------------------------------+
+| - _searchController: TextEditingController               |
+| - _namesDict: Map<String, dynamic>                       |
+| - _filteredNames: Map<String, dynamic>                   |
+| - initState(): void                                      |
+| - fetchNames(): Future<Map<String, dynamic>>             |
+| - _filterNames(enteredKeyword: String): void             |
+| - build(context: BuildContext): Widget                   |
++-----------------------------------------------------------+
+                   |
+                   V
++-----------------------------------------------------------+
+|                      DashboardPage                        |
++-----------------------------------------------------------+
+| - fetchPriceData(item_id: int): Future<double>           |
+| - fetchGraphData(item_id: int): Future<List<double>>     |
+| - build(context: BuildContext): Widget                   |
++-----------------------------------------------------------+
+                   |
+                   V
++-----------------------------------------------------------+
+|                        GraphPage                          |
++-----------------------------------------------------------+
+| - prices: List<double>                                   |
+| - build(context: BuildContext): Widget                   |
++-----------------------------------------------------------+

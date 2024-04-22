@@ -1,0 +1,22 @@
+This Dart and Flutter application is designed to manage and display market data for various items. The application comprises several key components that interact with an external API, manage local data using Hive (a lightweight and efficient local storage solution for Flutter), and provide a user-friendly interface for querying and displaying data.
+
+Key Components:
+Initialization and Configuration:
+The app initializes Hive for local data storage and sets up the main application framework using MaterialApp.
+Search Page (SearchPage):
+This page allows users to search for items by name. It fetches names from an external API and filters results based on user input. The filtered results are displayed in a list, and users can add items to a local Hive box for persistent storage.
+Dashboard Page (DashboardPage):
+The dashboard displays a list of items stored in the Hive box. Each item in the list shows its current price fetched from an external API. There are options to view detailed price graphs for each item and to remove items from the list.
+Graph Page (GraphPage):
+This page displays a price graph for a specific item using the fl_chart package. It shows three data points: recent lowest price, historical lowest price, and average price.
+
+Key Features:
+API Integration: The app fetches names and prices from an external API, providing up-to-date market data.
+Local Data Management: Uses Hive to store item details locally, allowing for efficient data retrieval and manipulation without constant API calls.
+User Interaction: Implements interactive features like searching, adding items, and viewing detailed graphs, enhancing user engagement.
+
+Technical Details:
+The app uses asynchronous programming (async/await) to handle network requests and data processing efficiently.
+There is robust error handling for network requests, ensuring the app remains responsive even if the external data sources are temporarily unavailable.
+The UI is built using Flutter’s Material components, offering a clean and modern interface.
+This application is well-structured for scalability, making it suitable for expansion, such as adding more detailed market analysis features or integrating additional data sources.

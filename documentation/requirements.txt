@@ -1,0 +1,28 @@
+Features
+Individual Item Lookup
+-Graph of past prices
+-Item name
+-Link to nw database
+-Ability to favorite
+Dashboard Page
+-Favorited Items already displayed
+-Set price alerts
+ 
+
+Epic: As a user, I would like to be able to lookup every sellable/buyable item in the game
+
+Story: As a user, I would like to see a graph of the recent prices of an item
+
+Story: As a user, I would like to see the item name and id
+
+Story: As a user, I would like to have links to other useful websites regarding this item
+
+Story: As a user, I would like to be able to set certain items as favorites
+
+Epic: As a user, I would like to be able to have a dashboard page that displays my favorite items
+
+Story: I would like to be able to see the current price and name of my favorite items
+
+Story: I would like to be able to set price alerts for my favorite items
+
+Story: I would like to be able to remove favorite items
