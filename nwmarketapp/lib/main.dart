@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -161,13 +162,20 @@ class _DashboardPageState extends State<DashboardPage> {
           .get(Uri.parse('https://nwmarketprices.com/0/15?cn_id=$item_id'));
       if (response.statusCode == 200) {
         Map<String, dynamic> data = json.decode(response.body);
+
+        // Assume the recent values are the latest ones in the `price_graph_data` list
+        var latestGraphData = data['price_graph_data'].last;
+
         List<double> prices = [
-          data['recent_lowest_price']?.toDouble() ?? 0, // Ensure it's a double
-          (data['lowest_price']?.toDouble() ?? 0) -
-              0.25, // Ensure it's a double
-          (data['avg_price']?.toDouble() ?? 0) + 0.03 // Ensure it's a double
+          data['recent_lowest_price']?.toDouble() ??
+              0.0, // recent_lowest_price from main object
+          latestGraphData['lowest_price']?.toDouble() ??
+              0.0, // lowest_price from the latest price graph data
+          latestGraphData['highest_buy_order']?.toDouble() ??
+              0.0, // highest_buy_order from the latest price graph data
+          latestGraphData['avg_price']?.toDouble() ??
+              0.0, // avg_price from the latest price graph data
         ];
-        print("Prices test:");
         print(prices);
         return prices;
       } else {
@@ -264,63 +272,72 @@ class GraphPage extends StatelessWidget {
         child: SizedBox(
           width: double.infinity,
           height: 400, // Set the height of the graph
-          child: LineChart(
-            LineChartData(
-              gridData: FlGridData(show: true),
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: prices.reduce(max) *
+                  1.2, // Ensure there's some space above the highest bar
               titlesData: FlTitlesData(
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    reservedSize: 50, // Reserve space for labels
-                    interval:
-                        1, // Ensure titles are shown at every integer interval
+                    reservedSize: 50,
+                    interval: 1,
                     getTitlesWidget: (value, meta) {
                       switch (value.toInt()) {
                         case 0:
                           return Text('Recent',
-                              style: TextStyle(
-                                  fontSize: 10)); // Adjusted for better fit
+                              style:
+                                  TextStyle(fontSize: 10, color: Colors.red));
                         case 1:
-                          return Text('Lowest', style: TextStyle(fontSize: 10));
+                          return Text('Lowest',
+                              style:
+                                  TextStyle(fontSize: 10, color: Colors.red));
                         case 2:
+                          return Text('Highest',
+                              style:
+                                  TextStyle(fontSize: 10, color: Colors.red));
+                        case 3:
                           return Text('Average',
-                              style: TextStyle(fontSize: 10));
+                              style:
+                                  TextStyle(fontSize: 10, color: Colors.red));
                         default:
                           return Text('');
                       }
                     },
                   ),
                 ),
+                topTitles: AxisTitles(
+                    sideTitles:
+                        SideTitles(showTitles: false)), // Hide top titles
+                rightTitles: AxisTitles(
+                    sideTitles:
+                        SideTitles(showTitles: false)), // Hide right titles
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    getTitlesWidget: (value, meta) => Text('${value.toInt()}'),
+                    interval: prices.reduce(max) / 5, // Increase intervals
+                    getTitlesWidget: (value, meta) => Text('${value.toInt()}',
+                        style: TextStyle(color: Colors.red)),
                     reservedSize: 40, // Reserve space for labels
                   ),
                 ),
               ),
+              barGroups: prices
+                  .asMap()
+                  .map((index, value) => MapEntry(
+                      index,
+                      BarChartGroupData(x: index, barRods: [
+                        BarChartRodData(
+                          toY: value,
+                          color: Colors.red,
+                          width: 15, // Set the bar width
+                        ),
+                      ])))
+                  .values
+                  .toList(),
+              gridData: FlGridData(show: true),
               borderData: FlBorderData(show: true),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: [
-                    FlSpot(0, prices[0]),
-                    FlSpot(1, prices[1]),
-                    FlSpot(2, prices[2]),
-                  ],
-                  isCurved: true,
-                  barWidth: 2,
-                  color: Theme.of(context).primaryColor,
-                  dotData: FlDotData(
-                    show: true, // Show dots on each data spot
-                    getDotPainter: (spot, percent, barData, index) =>
-                        FlDotCirclePainter(
-                      radius: 4,
-                      color: Theme.of(context).colorScheme.secondary,
-                      strokeColor: Colors.white,
-                    ),
-                  ),
-                )
-              ],
             ),
           ),
         ),
