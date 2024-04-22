@@ -43,11 +43,16 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   fl_chart: ^0.67.0
+  mockito: ^5.4.4
+  path_provider_platform_interface: ^2.1.2
   
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  
+  path_provider_mocks: ^0.1.0
+   mockito: ^5.0.16
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
