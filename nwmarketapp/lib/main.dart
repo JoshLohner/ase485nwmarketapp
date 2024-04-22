@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:fl_chart/fl_chart.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -154,6 +155,31 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<List<double>> fetchGraphData(int item_id) async {
+    try {
+      final response = await http
+          .get(Uri.parse('https://nwmarketprices.com/0/15?cn_id=$item_id'));
+      if (response.statusCode == 200) {
+        Map<String, dynamic> data = json.decode(response.body);
+        List<double> prices = [
+          data['recent_lowest_price']?.toDouble() ?? 0, // Ensure it's a double
+          (data['lowest_price']?.toDouble() ?? 0) -
+              0.25, // Ensure it's a double
+          (data['avg_price']?.toDouble() ?? 0) + 0.03 // Ensure it's a double
+        ];
+        print("Prices test:");
+        print(prices);
+        return prices;
+      } else {
+        throw Exception(
+            'Failed to fetch graph data: Server responded with ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Failed to fetch graph data: $e'); // Log the error
+      throw Exception('Error fetching graph data: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,16 +209,121 @@ class _DashboardPageState extends State<DashboardPage> {
                     }
                   },
                 ),
-                trailing: IconButton(
-                  icon: Icon(Icons.remove),
-                  onPressed: () {
-                    box.delete(key);
-                  },
+                trailing: Row(
+                  mainAxisSize: MainAxisSize
+                      .min, // Ensures the row takes minimum space required by children
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.show_chart),
+                      onPressed: () async {
+                        try {
+                          List<double> prices =
+                              await fetchGraphData(itemId); // Fetch data
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    GraphPage(prices: prices)),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('Failed to load data: $e')));
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.remove),
+                      onPressed: () {
+                        box.delete(key); // This already exists in your code
+                      },
+                    ),
+                  ],
                 ),
               );
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class GraphPage extends StatelessWidget {
+  final List<double> prices;
+
+  GraphPage({required this.prices});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Price Graph"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: SizedBox(
+          width: double.infinity,
+          height: 400, // Set the height of the graph
+          child: LineChart(
+            LineChartData(
+              gridData: FlGridData(show: true),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 50, // Reserve space for labels
+                    interval:
+                        1, // Ensure titles are shown at every integer interval
+                    getTitlesWidget: (value, meta) {
+                      switch (value.toInt()) {
+                        case 0:
+                          return Text('Recent',
+                              style: TextStyle(
+                                  fontSize: 10)); // Adjusted for better fit
+                        case 1:
+                          return Text('Lowest', style: TextStyle(fontSize: 10));
+                        case 2:
+                          return Text('Average',
+                              style: TextStyle(fontSize: 10));
+                        default:
+                          return Text('');
+                      }
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) => Text('${value.toInt()}'),
+                    reservedSize: 40, // Reserve space for labels
+                  ),
+                ),
+              ),
+              borderData: FlBorderData(show: true),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: [
+                    FlSpot(0, prices[0]),
+                    FlSpot(1, prices[1]),
+                    FlSpot(2, prices[2]),
+                  ],
+                  isCurved: true,
+                  barWidth: 2,
+                  color: Theme.of(context).primaryColor,
+                  dotData: FlDotData(
+                    show: true, // Show dots on each data spot
+                    getDotPainter: (spot, percent, barData, index) =>
+                        FlDotCirclePainter(
+                      radius: 4,
+                      color: Theme.of(context).colorScheme.secondary,
+                      strokeColor: Colors.white,
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
