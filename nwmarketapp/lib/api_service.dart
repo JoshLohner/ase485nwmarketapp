@@ -33,22 +33,71 @@ Future<String> fetchLatestPrices() async {
   }
 }
 
-Future<Map<String, dynamic>> fetchNames() async {
-  final data =
-      await httpGetJson('https://nwmarketprices.com/api/confirmed_names/');
-  Map<String, dynamic> namesDict = {};
-
-  data.forEach((key, value) {
-    if (value['name_id'] != null) {
-      namesDict[value['name']] = value['name_id'];
+Future<double> fetchPriceData(int itemId) async {
+  try {
+    final response = await http
+        .get(Uri.parse('https://nwmarketprices.com/0/15?cn_id=$itemId'));
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = json.decode(response.body);
+      return data['recent_lowest_price']?.toDouble() ??
+          0; // Ensure it's a double
+    } else {
+      throw Exception(
+          'Failed to fetch price: Server responded with ${response.statusCode}');
     }
-  });
-
-  return namesDict;
+  } catch (e) {
+    // ignore: avoid_print
+    print('Failed to fetch price data: $e'); // Log the error
+    throw Exception('Error fetching price: $e');
+  }
 }
 
-Future<double> fetchPriceData(int item_id) async {
-  final responseData =
-      await httpGetJson('https://nwmarketprices.com/0/15?cn_id=$item_id');
-  return responseData['recent_lowest_price'];
+Future<List<double>> fetchGraphData(int itemId) async {
+  try {
+    final response = await http
+        .get(Uri.parse('https://nwmarketprices.com/0/15?cn_id=$itemId'));
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = json.decode(response.body);
+
+      // Assume the recent values are the latest ones in the `price_graph_data` list
+      var latestGraphData = data['price_graph_data'].first;
+
+      List<double> prices = [
+        data['recent_lowest_price']?.toDouble() ??
+            0.0, // recent_lowest_price from main object
+        latestGraphData['lowest_price']?.toDouble() ??
+            0.0, // lowest_price from the latest price graph data
+        latestGraphData['highest_buy_order']?.toDouble() ??
+            0.0, // highest_buy_order from the latest price graph data
+        latestGraphData['avg_price']?.toDouble() ??
+            0.0, // avg_price from the latest price graph data
+      ];
+
+      return prices;
+    } else {
+      throw Exception(
+          'Failed to fetch graph data: Server responded with ${response.statusCode}');
+    }
+  } catch (e) {
+    // ignore: avoid_print
+    print('Failed to fetch graph data: $e'); // Log the error
+    throw Exception('Error fetching graph data: $e');
+  }
+}
+
+Future<Map<String, dynamic>> fetchNames() async {
+  final response = await http
+      .get(Uri.parse('https://nwmarketprices.com/api/confirmed_names/'));
+  if (response.statusCode == 200) {
+    Map<String, dynamic> data = json.decode(response.body);
+    Map<String, dynamic> namesDict = {};
+    data.forEach((key, value) {
+      if (value['name_id'] != null) {
+        namesDict[value['name']] = value['name_id'];
+      }
+    });
+    return namesDict;
+  } else {
+    throw Exception('Failed to load names');
+  }
 }
